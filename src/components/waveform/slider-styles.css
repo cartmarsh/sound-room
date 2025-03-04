@@ -1,0 +1,58 @@
+/* Custom styling for sliders */
+[data-slot="slider-track"] {
+  @apply bg-stone-600 h-2 rounded-full;
+  background-color: rgb(87, 83, 78) !important; /* stone-600 */
+  height: 0.5rem !important;
+  border-radius: 9999px !important;
+  transition: background-color 0.2s ease;
+}
+
+[data-slot="slider-track"]:hover {
+  background-color: rgb(120, 113, 108) !important; /* slightly lighter on hover */
+}
+
+[data-slot="slider-range"] {
+  @apply bg-primary;
+  background-color: rgb(252, 171, 0) !important; /* primary color approximation */
+  box-shadow: 0 0 8px rgba(255, 136, 0, 0.6) !important;
+  transition: all 0.2s ease;
+}
+
+[data-slot="slider-range"]:hover {
+  background-color: rgb(255, 177, 15) !important; /* slightly brighter on hover */
+  box-shadow: 0 0 12px rgba(255, 136, 0, 0.8) !important;
+}
+
+[data-slot="slider-thumb"] {
+  @apply h-5 w-5 border-2 border-primary bg-background shadow-md;
+  height: 1.25rem !important;
+  width: 1.25rem !important;
+  border-width: 2px !important;
+  border-color: rgb(252, 171, 0) !important; /* primary color approximation */
+  background-color: rgb(24, 23, 22) !important; /* background color */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+  transition: all 0.15s ease;
+}
+
+[data-slot="slider-thumb"]:hover {
+  transform: scale(1.15) !important;
+  border-color: rgb(255, 177, 15) !important; /* brighter on hover */
+  box-shadow: 0 0 0 5px rgba(252, 171, 0, 0.2) !important;
+}
+
+[data-slot="slider-thumb"]:active {
+  transform: scale(1.05) !important;
+  border-color: rgb(230, 155, 0) !important; /* slightly darker when active */
+  box-shadow: 0 0 0 8px rgba(252, 171, 0, 0.3) !important;
+}
+
+/* Focus state for accessibility */
+[data-slot="slider"]:focus-visible [data-slot="slider-thumb"] {
+  box-shadow: 0 0 0 4px rgba(252, 171, 0, 0.4) !important;
+  outline: none !important;
+}
+
+/* We don't need this class anymore since we're applying the shadow directly */
+/* .shadow-glow {
+  box-shadow: 0 0 8px theme('colors.primary.DEFAULT');
+} */ 

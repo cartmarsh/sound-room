@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SoundRoom
+
+An Ableton-inspired digital audio workstation (DAW) for creating and arranging sound waves.
+
+## Features
+
+- **Waveform Editor**: Draw custom waveforms by hand or use predefined waveform types (sine, square, triangle, sawtooth)
+- **Effects**: Apply reverb and distortion effects to your sounds
+- **Sound Transformation**: Apply effects like smoothing, stretching, and arpeggio to your waveforms
+- **Timeline**: Arrange your sounds on a multi-track timeline
+- **MIDI Export**: Export your creations as MIDI files
+
+## Technologies Used
+
+- **Next.js**: React framework with App Router
+- **TypeScript**: For type safety and better developer experience
+- **Tone.js**: WebAudio framework for sound synthesis
+- **Zustand**: Lightweight state management
+- **Shadcn UI & Radix UI**: Component library and accessible primitives
+- **Tailwind CSS**: Utility-first CSS framework
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+4. Open [http://localhost:3000](http://localhost:3000) with your browser
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Usage
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Creating Sounds
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Use the Waveform Editor to draw a sound wave
+2. Configure waveform type, effects and grid settings using the panel on the right
+3. Press Play to hear your creation
+4. Save the sound to add it to your library
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Arranging on Timeline
 
-## Learn More
+1. Saved sounds appear in the library panel
+2. Drag sounds to the timeline to arrange them
+3. Use the playhead to navigate through your composition
+4. Play the entire timeline to hear your arrangement
 
-To learn more about Next.js, take a look at the following resources:
+### Exporting
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Use the Export MIDI button to download your creation as a MIDI file
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+- `src/app/`: Next.js App Router pages
+- `src/components/`: UI components grouped by feature
+  - `waveform/`: Components for waveform editing
+  - `timeline/`: Components for timeline arrangement
+  - `ui/`: Shadcn UI components
+- `src/store/`: Zustand store for application state
+- `src/services/`: Audio engine and other services
+- `src/types/`: TypeScript type definitions
+- `src/utils/`: Utility functions for waveform processing and MIDI export
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT License

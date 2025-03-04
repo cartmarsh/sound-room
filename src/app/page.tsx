@@ -1,101 +1,322 @@
-import Image from "next/image";
+'use client'
+
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import WaveformCanvas from '@/components/waveform/WaveformCanvas'
+import WaveConfigPanel from '@/components/waveform/WaveConfigPanel'
+import Timeline from '@/components/timeline/Timeline'
+import { useAudioStore } from '@/store/useAudioStore'
+import { 
+  Play, 
+  Save, 
+  Trash2, 
+  Download, 
+  Edit3, 
+  Scissors, 
+  ZoomIn 
+} from 'lucide-react'
+import audioEngine from '@/services/AudioEngine'
+import { exportToMIDI, saveBlob } from '@/utils/midiExport'
+import { smoothLine, stretchLine, applyArpeggio } from '@/utils/waveform'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 export default function Home() {
+  const [soundName, setSoundName] = useState('Sound 1')
+  
+  const {
+    points,
+    clearPoints,
+    savedSounds,
+    saveSound,
+    editingState,
+    updateEditingState,
+    setPoints,
+    selectedWaveform,
+    effects,
+    isPlaying,
+    isRecording,
+    handlePlayPause,
+    handleStop,
+    handleRecord,
+  } = useAudioStore()
+  
+  // Play the current drawing
+  const playCurrentDrawing = () => {
+    if (points.length < 2) return
+    
+    audioEngine.playSound(points, selectedWaveform, effects)
+  }
+  
+  // Save the current drawing
+  const handleSaveSound = () => {
+    if (points.length < 2) return
+    
+    saveSound(soundName)
+    
+    // Generate next sound name
+    const nextNumber = (savedSounds.length + 1)
+    setSoundName(`Sound ${nextNumber}`)
+  }
+  
+  // Export to MIDI
+  const handleExportMIDI = () => {
+    if (points.length < 2) return
+    
+    try {
+      const midiBlob = exportToMIDI(points)
+      saveBlob(midiBlob, `${soundName}.mid`)
+    } catch (error) {
+      console.error('Failed to export MIDI:', error)
+    }
+  }
+  
+  // Toggle edit mode
+  const toggleEditMode = () => {
+    updateEditingState({ isEditMode: !editingState.isEditMode })
+  }
+  
+  // Apply effects to the selected segment or entire drawing
+  const applyEffect = (effect: 'smooth' | 'stretch' | 'arpeggio') => {
+    if (editingState.selectedSegment) {
+      // Apply to selected segment
+      const segment = editingState.selectedSegment
+      const newPoints = [...points]
+      
+      let processed = [...segment.points]
+      
+      if (effect === 'smooth') {
+        processed = smoothLine(processed)
+      } else if (effect === 'stretch') {
+        processed = stretchLine(processed, 1.5)
+      } else if (effect === 'arpeggio') {
+        processed = applyArpeggio(processed)
+      }
+      
+      // Replace segment in the full points array
+      newPoints.splice(segment.startIndex, segment.points.length, ...processed)
+      
+      setPoints(newPoints)
+      updateEditingState({ selectedSegment: null })
+      
+    } else if (points.length > 0) {
+      // Apply to entire drawing
+      let processed = [...points]
+      
+      if (effect === 'smooth') {
+        processed = smoothLine(processed)
+      } else if (effect === 'stretch') {
+        processed = stretchLine(processed, 1.5)
+      } else if (effect === 'arpeggio') {
+        processed = applyArpeggio(processed)
+      }
+      
+      setPoints(processed)
+    }
+  }
+  
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <main className="flex min-h-screen flex-col bg-stone-950 text-white p-4 md:p-8">
+      <header className="mb-8">
+        <h1 className="text-2xl font-bold mb-2">SoundRoom</h1>
+        <p className="text-stone-400">A digital audio workstation for creating and arranging sounds</p>
+      </header>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left panel */}
+        <div className="lg:col-span-3 flex flex-col gap-6">
+          <div className="bg-stone-900 rounded-md border border-stone-700 p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Waveform Editor</h2>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant={editingState.isEditMode ? 'secondary' : 'outline'} 
+                  onClick={toggleEditMode}
+                  className={cn(
+                    "transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-offset-stone-900",
+                    editingState.isEditMode 
+                      ? "bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white focus:ring-violet-500/50" 
+                      : "border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white active:bg-stone-700 focus:ring-stone-500/50"
+                  )}
+                >
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  {editingState.isEditMode ? 'Exit Edit' : 'Edit Mode'}
+                </Button>
+                
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => applyEffect('smooth')}
+                  className="border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white active:bg-stone-700 transition-colors
+                             focus:ring-2 focus:ring-stone-500/50 focus:ring-offset-2 focus:ring-offset-stone-900"
+                >
+                  <ZoomIn className="h-4 w-4 mr-2" />
+                  Smooth
+                </Button>
+                
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => applyEffect('stretch')}
+                  className="border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white active:bg-stone-700 transition-colors
+                             focus:ring-2 focus:ring-stone-500/50 focus:ring-offset-2 focus:ring-offset-stone-900"
+                >
+                  <Scissors className="h-4 w-4 mr-2" />
+                  Stretch
+                </Button>
+                
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => applyEffect('arpeggio')}
+                  className="border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white active:bg-stone-700 transition-colors
+                             focus:ring-2 focus:ring-stone-500/50 focus:ring-offset-2 focus:ring-offset-stone-900"
+                >
+                  Arpeggio
+                </Button>
+              </div>
+            </div>
+            
+            <WaveformCanvas width={800} height={400} />
+            
+            <div className="flex justify-between items-center mt-4">
+              <div className="flex gap-2">
+                <Button 
+                  onClick={playCurrentDrawing}
+                  className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white transition-colors
+                             focus:ring-2 focus:ring-emerald-500/50 focus:ring-offset-2 focus:ring-offset-stone-900"
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Play
+                </Button>
+                
+                <Button 
+                  variant="destructive" 
+                  onClick={clearPoints}
+                  className="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white transition-colors
+                             focus:ring-2 focus:ring-red-500/50 focus:ring-offset-2 focus:ring-offset-stone-900"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear
+                </Button>
+              </div>
+              
+              <div className="flex gap-2 items-center">
+                <Input
+                  className="w-48 text-stone-800"
+                  value={soundName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSoundName(e.target.value)}
+                  placeholder="Sound name"
+                />
+                
+                <Button 
+                  onClick={handleSaveSound}
+                  className="bg-primary hover:bg-primary/90 active:bg-primary/80 text-white transition-colors
+                             focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-stone-900"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={handleExportMIDI}
+                  className="border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white active:bg-stone-700 transition-colors
+                             focus:ring-2 focus:ring-stone-500/50 focus:ring-offset-2 focus:ring-offset-stone-900"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export MIDI
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          <Timeline width={800} height={300} />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        
+        {/* Right panel */}
+        <div className="flex flex-col gap-4">
+          <WaveConfigPanel />
+          
+          <div className="bg-stone-900 border border-stone-700 rounded-md p-4">
+            <h3 className="text-lg font-semibold mb-4">Saved Sounds</h3>
+            
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {savedSounds.length === 0 ? (
+                <div className="text-stone-500 text-sm italic">No saved sounds yet</div>
+              ) : (
+                savedSounds.map((sound) => (
+                  <div 
+                    key={sound.id}
+                    className="p-2 bg-stone-800 rounded flex justify-between items-center"
+                  >
+                    <span>{sound.name}</span>
+                    <div className="flex gap-1">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => {
+                          audioEngine.playSound(sound.points, sound.waveform, sound.effects)
+                        }}
+                        className="text-stone-400 hover:text-emerald-400 hover:bg-emerald-950/30 active:bg-emerald-950/40 transition-all
+                                   focus:ring-2 focus:ring-emerald-500/30 rounded-full"
+                      >
+                        <Play className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-3 my-4">
+        <button
+          onClick={handleStop}
+          className="p-3 rounded-full bg-red-500 text-white hover:bg-red-600 active:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-offset-2 disabled:opacity-50"
+          disabled={!isPlaying}
+          aria-label="Stop"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        
+        <button
+          onClick={handlePlayPause}
+          className="p-4 rounded-full bg-primary text-white hover:bg-primary/90 active:bg-primary/80 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 disabled:opacity-50"
+          aria-label={isPlaying ? 'Pause' : 'Play'}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          {isPlaying ? (
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ) : (
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )}
+        </button>
+        
+        <button
+          onClick={handleRecord}
+          className={`p-3 rounded-full text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 ${
+            isRecording 
+              ? 'bg-red-600 hover:bg-red-700 active:bg-red-800 focus:ring-red-600/50'
+              : 'bg-neutral-700 hover:bg-neutral-800 active:bg-neutral-900 focus:ring-neutral-700/50'
+          }`}
+          aria-label={isRecording ? 'Stop Recording' : 'Start Recording'}
         >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="6" fill={isRecording ? "currentColor" : "none"} strokeWidth={2} />
+          </svg>
+        </button>
+      </div>
+    </main>
+  )
 }

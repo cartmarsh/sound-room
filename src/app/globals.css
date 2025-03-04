@@ -1,26 +1,195 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 60 5% 5%;
+    --foreground: 60 10% 98%;
+    
+    --card: 60 5% 7%;
+    --card-foreground: 60 10% 98%;
+    
+    --popover: 60 5% 7%;
+    --popover-foreground: 60 10% 98%;
+    
+    --primary: 25 95% 53%;
+    --primary-foreground: 60 10% 98%;
+    
+    --secondary: 60 5% 14%;
+    --secondary-foreground: 60 10% 98%;
+    
+    --muted: 60 5% 14%;
+    --muted-foreground: 60 5% 65%;
+    
+    --accent: 141 76% 36%;
+    --accent-foreground: 60 10% 98%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 60 10% 98%;
+    
+    --border: 60 5% 15%;
+    --input: 60 5% 15%;
+    --ring: 25 95% 53%;
+    
+    --radius: 0.5rem;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Ableton-inspired color themes */
+.bg-ableton-dark {
+  @apply bg-stone-900;
+}
+
+.bg-ableton-darker {
+  @apply bg-stone-950;
+}
+
+.bg-ableton-light {
+  @apply bg-stone-800;
+}
+
+.bg-ableton-track-odd {
+  @apply bg-stone-800;
+}
+
+.bg-ableton-track-even {
+  @apply bg-stone-800;
+}
+
+.border-ableton {
+  @apply border-stone-700;
+}
+
+/* Waveform colors by type */
+.waveform-sine {
+  @apply bg-blue-600;
+}
+
+.waveform-square {
+  @apply bg-green-600;
+}
+
+.waveform-triangle {
+  @apply bg-yellow-600;
+}
+
+.waveform-sawtooth {
+  @apply bg-red-600;
+}
+
+.waveform-custom {
+  @apply bg-purple-600;
+}
+
+/* UI elements */
+.ableton-button {
+  @apply rounded-sm bg-stone-800 hover:bg-stone-700 text-white px-3 py-1.5 text-sm font-medium;
+}
+
+.ableton-button-primary {
+  @apply bg-orange-600 hover:bg-orange-500;
+}
+
+.ableton-slider {
+  @apply h-2 bg-stone-700 rounded-sm;
+}
+
+.ableton-slider-thumb {
+  @apply w-3 h-5 bg-orange-500 rounded-sm;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-stone-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-stone-700 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-stone-600;
+}
+
+/* Slider component custom styling */
+[data-slot="slider-track"] {
+  background-color: rgba(120, 120, 120, 0.3) !important;
+  height: 0.5rem !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(150, 150, 150, 0.2) !important;
+}
+
+[data-slot="slider-range"] {
+  background-color: rgb(255, 100, 50) !important;
+  box-shadow: 0 0 8px rgba(255, 100, 50, 0.6) !important;
+}
+
+[data-slot="slider-thumb"] {
+  height: 1.25rem !important;
+  width: 1.25rem !important;
+  border: 2px solid rgb(255, 100, 50) !important;
+  background-color: rgb(30, 30, 30) !important;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5) !important;
 }
