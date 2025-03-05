@@ -8,6 +8,9 @@ export class AudioEngine {
   private synth: Tone.MonoSynth | null = null
   private reverb: Tone.Reverb | null = null
   private distortion: Tone.Distortion | null = null
+  private filter: Tone.Filter | null = null
+  private delay: Tone.FeedbackDelay | null = null
+  private chorus: Tone.Chorus | null = null
   
   constructor() {
     // Initialize when required to avoid audio context issues
@@ -19,35 +22,79 @@ export class AudioEngine {
     try {
       this.context = new AudioContext()
       
-      // Use MonoSynth instead of PolySynth for single continuous sound
+      // Enhanced MonoSynth with better default settings
       this.synth = new Tone.MonoSynth({
         oscillator: {
           type: 'sine'
         },
         envelope: {
-          attack: 0.01,
-          decay: 0.2,
-          sustain: 0.8,
-          release: 0.5
+          attack: 0.05,
+          decay: 0.3,
+          sustain: 0.6,
+          release: 1.0,
+          attackCurve: 'exponential',
+          releaseCurve: 'exponential'
+        },
+        filter: {
+          Q: 1,
+          type: 'lowpass',
+          rolloff: -12
+        },
+        filterEnvelope: {
+          attack: 0.2,
+          decay: 0.5,
+          sustain: 0.5,
+          release: 2,
+          baseFrequency: 200,
+          octaves: 3,
+          exponent: 2
         }
-      }).toDestination()
+      })
       
-      // Create effects with safe default values
+      // Create effects chain
+      this.filter = new Tone.Filter({
+        type: 'lowpass',
+        frequency: 2000,
+        rolloff: -12,
+        Q: 1
+      })
+      
+      this.chorus = new Tone.Chorus({
+        frequency: 4,
+        delayTime: 2.5,
+        depth: 0.7,
+        wet: 0.1
+      }).start() // Chorus needs to be started
+      
+      this.delay = new Tone.FeedbackDelay({
+        delayTime: 0.3,
+        feedback: 0.4,
+        wet: 0.1
+      })
+      
       this.reverb = new Tone.Reverb({
-        decay: 3,
-        wet: 0 // Start with no effect
-      }).toDestination()
+        decay: 2.5,
+        preDelay: 0.1,
+        wet: 0.3
+      })
       
       this.distortion = new Tone.Distortion({
-        distortion: 0, // Start with no distortion
-        wet: 1 // Full effect when used
-      }).toDestination()
+        distortion: 0.2,
+        oversample: '4x',
+        wet: 0.1
+      })
       
-      // Connect effects
-      this.synth.connect(this.reverb)
-      this.synth.connect(this.distortion)
+      // Connect effects in series (remove individual toDestination calls)
+      this.synth.chain(
+        this.filter,
+        this.chorus,
+        this.delay,
+        this.reverb,
+        this.distortion,
+        Tone.Destination
+      )
       
-      console.log('Audio engine initialized successfully')
+      console.log('Audio engine initialized with effects chain')
     } catch (error) {
       console.error('Failed to initialize audio engine:', error)
     }
@@ -57,15 +104,13 @@ export class AudioEngine {
    * Maps a y-coordinate to a frequency in Hz
    */
   private mapToFrequency(y: number, height: number): number {
-    // Map y value (0=top to height=bottom) to frequency range (110Hz to 880Hz)
-    const minFreq = 110 // A2
-    const maxFreq = 880 // A5
+    // Extended frequency range for more musical possibilities
+    const minFreq = 55  // A1
+    const maxFreq = 1760 // A6
     
-    // Invert y value since canvas y increases downward
     const invertedY = height - y
     const normalizedY = invertedY / height
     
-    // Apply logarithmic mapping for more natural musical intervals
     return minFreq * Math.pow(maxFreq / minFreq, normalizedY)
   }
   
@@ -116,25 +161,61 @@ export class AudioEngine {
   async playSound(
     points: WaveformPoint[], 
     waveformType: WaveformType = 'sine',
-    effects: { reverb: number; distortion: number } = { reverb: 0.001, distortion: 0 },
+    effects: { 
+      reverb: number; 
+      distortion: number;
+      filter?: number;
+      delay?: number;
+      chorus?: number;
+    } = { 
+      reverb: 0.3, 
+      distortion: 0.1,
+      filter: 2000,
+      delay: 0.1,
+      chorus: 0.1
+    },
     duration?: number, 
     delayStart = 0
   ): Promise<void> {
     this.initialize()
-    if (!this.synth || !this.reverb || !this.distortion || points.length < 2) return
+    if (!this.synth || !this.reverb || !this.distortion || !this.filter || !this.delay || !this.chorus || points.length < 2) return
     
     try {
-      // Apply effects
-      // Ensure minimum valid decay for reverb
-      this.reverb.decay = Math.max(0.001, effects.reverb * 10) 
+      // Apply effects with logging
+      console.log('Applying effects:', effects)
       
-      // Set the wet parameter directly for better control over reverb amount
-      if (this.reverb.wet && typeof this.reverb.wet.value !== 'undefined') {
-        this.reverb.wet.value = effects.reverb;
+      // Reverb
+      this.reverb.decay = Math.max(0.001, effects.reverb * 10)
+      if (this.reverb.wet) {
+        this.reverb.wet.value = effects.reverb
+        console.log('Reverb wet:', this.reverb.wet.value)
       }
       
-      // Apply distortion safely
+      // Distortion
       this.distortion.distortion = effects.distortion || 0
+      if (this.distortion.wet) {
+        this.distortion.wet.value = effects.distortion || 0
+        console.log('Distortion amount:', this.distortion.distortion)
+      }
+      
+      // Filter
+      if (effects.filter && this.filter.frequency) {
+        this.filter.frequency.value = effects.filter
+        console.log('Filter frequency:', this.filter.frequency.value)
+      }
+      
+      // Delay with feedback adjustment
+      if (effects.delay && this.delay.wet) {
+        this.delay.wet.value = effects.delay
+        this.delay.feedback.value = effects.delay * 0.6 // Proportional feedback
+        console.log('Delay wet:', this.delay.wet.value, 'feedback:', this.delay.feedback.value)
+      }
+      
+      // Chorus
+      if (effects.chorus && this.chorus.wet) {
+        this.chorus.wet.value = effects.chorus
+        console.log('Chorus wet:', this.chorus.wet.value)
+      }
       
       // Calculate times for all points
       const processedPoints = this.calculateTimeValues(points, duration)
@@ -210,7 +291,7 @@ export class AudioEngine {
    */
   stopAllSound(): void {
     if (this.synth) {
-      this.synth.releaseAll()
+      this.synth.triggerRelease() // Fix for releaseAll error
     }
   }
   
@@ -221,10 +302,16 @@ export class AudioEngine {
     if (this.synth) this.synth.dispose()
     if (this.reverb) this.reverb.dispose()
     if (this.distortion) this.distortion.dispose()
+    if (this.filter) this.filter.dispose()
+    if (this.delay) this.delay.dispose()
+    if (this.chorus) this.chorus.dispose()
     
     this.synth = null
     this.reverb = null
     this.distortion = null
+    this.filter = null
+    this.delay = null
+    this.chorus = null
     this.context = null
   }
 }

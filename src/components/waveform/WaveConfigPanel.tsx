@@ -216,12 +216,63 @@ const WaveConfigPanel = () => {
                 <span>Drive</span>
               </div>
             </div>
+
+            <div>
+              <div className="text-sm text-stone-200 mb-2">Filter Frequency</div>
+              <Slider
+                value={[effects.filter || 2000]}
+                min={20}
+                max={20000}
+                step={100}
+                onValueChange={(value) => setEffect('filter', value[0])}
+                className="py-2"
+              />
+              <div className="flex justify-between text-xs text-stone-500 mt-1">
+                <span>Low</span>
+                <span>High</span>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-sm text-stone-200 mb-2">Delay</div>
+              <Slider
+                value={[effects.delay || 0.1]}
+                min={0}
+                max={1}
+                step={0.01}
+                onValueChange={(value) => setEffect('delay', value[0])}
+                className="py-2"
+              />
+              <div className="flex justify-between text-xs text-stone-500 mt-1">
+                <span>None</span>
+                <span>Full</span>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-sm text-stone-200 mb-2">Chorus</div>
+              <Slider
+                value={[effects.chorus || 0.1]}
+                min={0}
+                max={1}
+                step={0.01}
+                onValueChange={(value) => setEffect('chorus', value[0])}
+                className="py-2"
+              />
+              <div className="flex justify-between text-xs text-stone-500 mt-1">
+                <span>None</span>
+                <span>Full</span>
+              </div>
+            </div>
             
             {/* Current Settings Summary */}
             <div className="mt-6 p-3 bg-stone-800 rounded-md border border-stone-700 text-xs text-stone-300">
               <p><span className="font-semibold">Current Waveform:</span> {selectedWaveform}</p>
               <p><span className="font-semibold">Reverb:</span> {Math.round(effects.reverb * 100)}%</p>
               <p><span className="font-semibold">Distortion:</span> {Math.round(effects.distortion * 100)}%</p>
+              <p><span className="font-semibold">Filter:</span> {Math.round(effects.filter || 2000)}Hz</p>
+              <p><span className="font-semibold">Delay:</span> {Math.round((effects.delay || 0.1) * 100)}%</p>
+              <p><span className="font-semibold">Chorus:</span> {Math.round((effects.chorus || 0.1) * 100)}%</p>
             </div>
           </div>
         </TabsContent>
