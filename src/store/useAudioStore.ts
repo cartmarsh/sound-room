@@ -10,7 +10,7 @@ import {
   TimelineEvent, 
   WaveformPoint, 
   WaveformType,
-  LineSegment
+  // LineSegment
 } from '@/types/audio'
 
 interface AudioStore {

@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from 'react'
 import { useAudioStore } from '@/store/useAudioStore'
-import { findLineSegment, isPointNearLine } from '@/utils/waveform'
+import { findLineSegment } from '@/utils/waveform'
 import { LineSegment, WaveformPoint } from '@/types/audio'
 
 interface WaveformCanvasProps {
@@ -18,7 +18,7 @@ const WaveformCanvas = ({
 }: WaveformCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isMouseDown, setIsMouseDown] = useState(false)
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const [/* mousePos */, setMousePos] = useState({ x: 0, y: 0 })
   
   const {
     points,

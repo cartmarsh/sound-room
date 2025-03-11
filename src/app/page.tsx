@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import WaveformCanvas from '@/components/waveform/WaveformCanvas'
 import WaveConfigPanel from '@/components/waveform/WaveConfigPanel'
 import Timeline from '@/components/timeline/Timeline'
