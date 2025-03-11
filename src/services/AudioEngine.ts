@@ -227,8 +227,7 @@ export class AudioEngine {
       const now = Tone.now() + delayStart
       
       // For custom waveform, use sine as fallback but ideally implement custom waveform later
-      let actualWaveform: Exclude<WaveformType, 'custom'> = 
-        waveformType === 'custom' ? 'sine' : waveformType
+      const actualWaveform = waveformType === 'custom' ? 'sine' : waveformType
         
       // Set the waveform type  
       if (this.synth.oscillator) {

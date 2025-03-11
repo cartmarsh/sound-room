@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import { useAudioStore } from '@/store/useAudioStore'
 import { findLineSegment } from '@/utils/waveform'
 import { LineSegment, WaveformPoint } from '@/types/audio'
@@ -30,29 +30,8 @@ const WaveformCanvas = ({
     updateEditingState,
   } = useAudioStore()
   
-  // Draw waveform whenever points or hover state changes
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, width, height)
-    
-    // Draw grid if enabled
-    if (drawingConfig.snapToGrid) {
-      drawGrid(ctx)
-    }
-    
-    // Draw existing waveform
-    drawWaveform(ctx, points, editingState.hoveredSegment)
-    
-  }, [points, width, height, drawingConfig.snapToGrid, editingState.hoveredSegment])
-  
   // Draw grid lines
-  const drawGrid = (ctx: CanvasRenderingContext2D) => {
+  const drawGrid = useCallback((ctx: CanvasRenderingContext2D) => {
     ctx.beginPath()
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
     ctx.lineWidth = 1
@@ -70,10 +49,10 @@ const WaveformCanvas = ({
     }
     
     ctx.stroke()
-  }
+  }, [width, height, gridSize])
   
   // Draw waveform points and lines
-  const drawWaveform = (
+  const drawWaveform = useCallback((
     ctx: CanvasRenderingContext2D, 
     points: WaveformPoint[], 
     hoveredSegment: LineSegment | null = null
@@ -125,7 +104,28 @@ const WaveformCanvas = ({
         
       drawPoint(ctx, point.x, point.y, isHovered)
     }
-  }
+  }, [])
+  
+  // Draw waveform whenever points or hover state changes
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height)
+    
+    // Draw grid if enabled
+    if (drawingConfig.snapToGrid) {
+      drawGrid(ctx)
+    }
+    
+    // Draw existing waveform
+    drawWaveform(ctx, points, editingState.hoveredSegment)
+    
+  }, [points, width, height, drawingConfig.snapToGrid, editingState.hoveredSegment, drawGrid, drawWaveform])
   
   // Draw a line connecting points
   const drawLine = (
