@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useAudioStore } from '@/store/useAudioStore'
-import { TimelineEvent } from '@/types/audio'
+import { TimelineEvent, SavedSound } from '@/types/audio'
 import { Button } from '@/components/ui/button'
 import { Play, Square } from 'lucide-react'
 import audioEngine from '@/services/AudioEngine'
@@ -20,7 +20,7 @@ const TimelineTrack = ({
   trackIndex: number
   height: number
   events: TimelineEvent[]
-  savedSounds: any[]
+  savedSounds: SavedSound[]
   pixelsPerSecond: number
   onDragStart: (event: TimelineEvent) => void
   onDragOver: (e: React.DragEvent<HTMLDivElement>) => void

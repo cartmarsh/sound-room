@@ -164,13 +164,13 @@ export function applyArpeggio(points: WaveformPoint[]): WaveformPoint[] {
   const result: WaveformPoint[] = []
   const offsets = [0, 20, -20, 40] // Y-offsets for the arpeggio pattern
   
-  points.forEach((point, _) => {
+  points.forEach((point) => {
     if (point.isNewLine) {
       result.push({...point})
       return
     }
     
-    offsets.forEach((offset, _) => {
+    offsets.forEach((offset) => {
       result.push({
         ...point,
         x: point.x + (offset * 10), // Slight x offset for each note

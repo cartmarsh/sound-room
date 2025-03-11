@@ -7,7 +7,7 @@ import { Toggle } from '@/components/ui/toggle'
 import { useAudioStore } from '@/store/useAudioStore'
 import { WaveformType } from '@/types/audio'
 import { Square, Triangle, Waves, ZapOff, Sliders, Grid } from 'lucide-react'
-import { useEffect, useCallback } from 'react'
+import { useEffect } from 'react'
 import { cn } from '@/lib/utils'
 
 const WaveConfigPanel = () => {
