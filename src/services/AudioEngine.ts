@@ -5,12 +5,17 @@ import { WaveformPoint, WaveformType } from '@/types/audio'
 
 export class AudioEngine {
   private context: AudioContext | null = null
-  private synth: Tone.MonoSynth | null = null
+  private monosynth: Tone.MonoSynth | null = null
   private reverb: Tone.Reverb | null = null
   private distortion: Tone.Distortion | null = null
   private filter: Tone.Filter | null = null
   private delay: Tone.FeedbackDelay | null = null
   private chorus: Tone.Chorus | null = null
+  private loopId: number | null = null
+  private isLooping: boolean = false
+  private finishCurrentLoop: boolean = false
+  private onPlaybackComplete: (() => void) | null = null
+  
   
   constructor() {
     // Initialize when required to avoid audio context issues
@@ -23,7 +28,7 @@ export class AudioEngine {
       this.context = new AudioContext()
       
       // Enhanced MonoSynth with better default settings
-      this.synth = new Tone.MonoSynth({
+      this.monosynth = new Tone.MonoSynth({
         oscillator: {
           type: 'sine'
         },
@@ -85,7 +90,7 @@ export class AudioEngine {
       })
       
       // Connect effects in series (remove individual toDestination calls)
-      this.synth.chain(
+      this.monosynth.chain(
         this.filter,
         this.chorus,
         this.delay,
@@ -119,12 +124,16 @@ export class AudioEngine {
    */
   private calculateTimeValues(
     points: WaveformPoint[], 
-    duration?: number
+    duration?: number,
+    bpm: number = 120
   ): WaveformPoint[] {
     if (points.length === 0) return []
     
     const processedPoints = [...points]
     let totalTime = 0
+    
+    // BPM scaling factor (120 BPM is the reference tempo)
+    const tempoFactor = 120 / bpm
     
     // First pass: calculate times based on x coordinates and gaps
     for (let i = 0; i < processedPoints.length; i++) {
@@ -132,12 +141,13 @@ export class AudioEngine {
       
       // Handle gaps
       if (point.isNewLine && point.gapDuration && i > 0) {
-        totalTime += point.gapDuration
+        // Apply tempo scaling to gaps as well
+        totalTime += point.gapDuration * tempoFactor
       }
       
-      // Calculate time based on x coordinate
-      // We'll normalize later if a specific duration is provided
-      point.time = totalTime + point.x / 1000
+      // Calculate time based on x coordinate with BPM scaling
+      // Higher BPM = faster playback = smaller time values
+      point.time = totalTime + (point.x / 1000) * tempoFactor
     }
     
     // If a specific duration is requested, normalize all times
@@ -175,10 +185,21 @@ export class AudioEngine {
       chorus: 0.1
     },
     duration?: number, 
-    delayStart = 0
+    delayStart = 0,
+    bpm: number = 120,
+    loop: boolean = false,
+    onComplete?: () => void
   ): Promise<void> {
     this.initialize()
-    if (!this.synth || !this.reverb || !this.distortion || !this.filter || !this.delay || !this.chorus || points.length < 2) return
+    if (!this.monosynth || !this.reverb || !this.distortion || !this.filter || !this.delay || !this.chorus || points.length < 2) return
+    
+    // Clear any existing loop
+    this.stopLoop()
+    
+    // Set the loop state and callback
+    this.isLooping = loop
+    this.finishCurrentLoop = false
+    this.onPlaybackComplete = onComplete || null
     
     try {
       // Apply effects with logging
@@ -217,8 +238,12 @@ export class AudioEngine {
         console.log('Chorus wet:', this.chorus.wet.value)
       }
       
-      // Calculate times for all points
-      const processedPoints = this.calculateTimeValues(points, duration)
+      // Calculate times for all points with BPM
+      const processedPoints = this.calculateTimeValues(points, duration, bpm)
+      
+      // Calculate total duration of the sound for later use
+      const lastPoint = processedPoints[processedPoints.length - 1]
+      const totalDuration = lastPoint.time + 0.5 // Add a small buffer
       
       // Ensure Tone.js is ready
       await Tone.start()
@@ -230,8 +255,8 @@ export class AudioEngine {
       const actualWaveform = waveformType === 'custom' ? 'sine' : waveformType
         
       // Set the waveform type  
-      if (this.synth.oscillator) {
-        this.synth.oscillator.type = actualWaveform
+      if (this.monosynth.oscillator) {
+        this.monosynth.oscillator.type = actualWaveform
       }
       
       // Split points into continuous line segments
@@ -260,11 +285,11 @@ export class AudioEngine {
         const segmentDuration = segmentEnd.time - segmentStart.time
         
         // Skip if too short
-        if (segmentDuration < 0.05) continue
+        if (segmentDuration < 0.02) continue
         
         // Start note with initial frequency
         const startFreq = this.mapToFrequency(segmentStart.y, 400)
-        this.synth.triggerAttack(startFreq, now + segmentStart.time)
+        this.monosynth.triggerAttack(startFreq, now + segmentStart.time)
         
         // Create frequency automation
         for (let i = 1; i < segment.length; i++) {
@@ -272,13 +297,38 @@ export class AudioEngine {
           const freq = this.mapToFrequency(point.y, 400)
           
           // Get direct access to frequency parameter for smooth transitions
-          if (this.synth.frequency) {
-            this.synth.frequency.setValueAtTime(freq, now + point.time)
+          if (this.monosynth.frequency) {
+            this.monosynth.frequency.setValueAtTime(freq, now + point.time)
           }
         }
         
         // End the note
-        this.synth.triggerRelease(now + segmentEnd.time + 0.1)
+        this.monosynth.triggerRelease(now + segmentEnd.time + 0.1)
+      }
+      
+      // If loop mode is enabled, schedule the next playback
+      if ((loop && this.isLooping) || this.finishCurrentLoop) {
+        // Schedule the next loop iteration
+        this.loopId = window.setTimeout(() => {
+          // If we're finishing the current loop and not looping anymore
+          if (this.finishCurrentLoop && !this.isLooping) {
+            this.finishCurrentLoop = false
+            if (this.onPlaybackComplete) {
+              this.onPlaybackComplete();
+            }
+          } 
+          // Only continue looping if isLooping is still true
+          else if (this.isLooping) {
+            this.playSound(points, waveformType, effects, duration, 0, bpm, loop, onComplete)
+          }
+        }, totalDuration * 1000)
+      } else if (!loop && this.onPlaybackComplete) {
+        // If not looping, call onComplete after the sound finishes
+        setTimeout(() => {
+          if (this.onPlaybackComplete) {
+            this.onPlaybackComplete();
+          }
+        }, totalDuration * 1000);
       }
     } catch (error) {
       console.error("Error in AudioEngine.playSound:", error)
@@ -286,11 +336,41 @@ export class AudioEngine {
   }
   
   /**
-   * Stop all audio
+   * Set loop mode - if currently playing, will finish the current loop
+   */
+  setLoopMode(enabled: boolean): void {
+    if (this.isLooping && !enabled) {
+      // If turning off loop while playing, finish current loop then stop
+      this.finishCurrentLoop = true;
+      this.isLooping = false;
+    } else {
+      this.isLooping = enabled;
+      this.finishCurrentLoop = false;
+    }
+  }
+  
+  /**
+   * Stop all audio and any active loops
    */
   stopAllSound(): void {
-    if (this.synth) {
-      this.synth.triggerRelease() // Fix for releaseAll error
+    if (this.monosynth) {
+      this.monosynth.triggerRelease() // Fix for releaseAll error
+    }
+    
+    // Stop any active loop and set isLooping to false
+    this.isLooping = false;
+    this.finishCurrentLoop = false;
+    this.onPlaybackComplete = null;
+    this.stopLoop();
+  }
+  
+  /**
+   * Stop any active loop
+   */
+  private stopLoop(): void {
+    if (this.loopId !== null) {
+      window.clearTimeout(this.loopId)
+      this.loopId = null
     }
   }
   
@@ -314,17 +394,18 @@ export class AudioEngine {
       chorus: 0.1
     },
     duration?: number,
-    filename = 'sound.wav'
+    filename = 'sound.wav',
+    bpm: number = 120
   ): Promise<void> {
     this.initialize()
-    if (!this.synth || !this.reverb || !this.distortion || !this.filter || !this.delay || !this.chorus || points.length < 2) {
+    if (!this.monosynth || !this.reverb || !this.distortion || !this.filter || !this.delay || !this.chorus || points.length < 2) {
       console.error('Audio engine not properly initialized or no points provided')
       return
     }
     
     try {
       // Calculate total duration based on the last point's time plus a buffer for release and effects tail
-      const processedPoints = this.calculateTimeValues(points, duration)
+      const processedPoints = this.calculateTimeValues(points, duration, bpm)
       const lastPoint = processedPoints[processedPoints.length - 1]
       const totalDuration = lastPoint.time + 2.0 // Add 2 seconds for release tail and reverb decay
       
@@ -338,7 +419,7 @@ export class AudioEngine {
       await recorder.start()
       
       // Play the sound with all effects (using the exact same method as normal playback)
-      await this.playSound(points, waveformType, effects, duration, 0)
+      await this.playSound(points, waveformType, effects, duration, 0, bpm)
       
       // Wait for the sound to finish playing, including reverb and delay tails
       // The longer wait ensures all effects like reverb tails are captured
@@ -479,14 +560,16 @@ export class AudioEngine {
    * Disconnect and clean up
    */
   dispose(): void {
-    if (this.synth) this.synth.dispose()
+    if (this.monosynth) this.monosynth.dispose()
     if (this.reverb) this.reverb.dispose()
     if (this.distortion) this.distortion.dispose()
     if (this.filter) this.filter.dispose()
     if (this.delay) this.delay.dispose()
     if (this.chorus) this.chorus.dispose()
     
-    this.synth = null
+    this.stopLoop()
+    
+    this.monosynth = null
     this.reverb = null
     this.distortion = null
     this.filter = null

@@ -25,13 +25,16 @@ function getNoteFromFrequency(frequency: number): string {
 /**
  * Export waveform points to a MIDI file
  */
-export function exportToMIDI(points: WaveformPoint[]): Blob {
+export function exportToMIDI(points: WaveformPoint[], bpm: number = 120): Blob {
   if (points.length < 2) {
     throw new Error('Not enough points to create a MIDI file')
   }
   
   // Create a new track
   const track = new MidiWriter.Track()
+  
+  // Set the tempo in the MIDI file
+  track.setTempo(bpm)
   
   // Process points to extract notes
   for (let i = 0; i < points.length - 1; i++) {
@@ -45,15 +48,15 @@ export function exportToMIDI(points: WaveformPoint[]): Blob {
     const frequency = mapToFrequency(current.y, 400)
     
     // Calculate note duration in ticks (assuming 480 ticks per quarter note)
-    // Time is in seconds, we'll convert to quarter notes (assuming 120 BPM)
+    // Time is in seconds, we'll convert to quarter notes using the actual BPM
     const durationInSeconds = (next.time || 0) - (current.time || 0)
     
     // Skip very short notes
     if (durationInSeconds < 0.05) continue
     
-    // At 120 BPM, one quarter note is 0.5 seconds
-    // So durationInQuarterNotes = durationInSeconds / 0.5
-    const durationInQuarterNotes = durationInSeconds / 0.5
+    // At the given BPM, calculate seconds per quarter note
+    const secondsPerQuarterNote = 60 / bpm
+    const durationInQuarterNotes = durationInSeconds / secondsPerQuarterNote
     
     // Convert to ticks (480 ticks per quarter note)
     const durationInTicks = Math.round(480 * durationInQuarterNotes)

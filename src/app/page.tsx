@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import WaveformCanvas from '@/components/waveform/WaveformCanvas'
 import WaveConfigPanel from '@/components/waveform/WaveConfigPanel'
@@ -15,16 +15,20 @@ import {
   Music, 
   Download,
   Scissors,
-  ZoomIn
+  ZoomIn,
+  Repeat
 } from 'lucide-react'
 import audioEngine from '@/services/AudioEngine'
 import { exportToMIDI, saveBlob } from '@/utils/midiExport'
 import { smoothLine, stretchLine, applyArpeggio } from '@/utils/waveform'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { Switch } from '@/components/ui/switch'
 
 export default function Home() {
   const [soundName, setSoundName] = useState('Sound x1')
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [showStopButton, setShowStopButton] = useState(false)
   
   const {
     points,
@@ -35,15 +39,78 @@ export default function Home() {
     updateEditingState,
     setPoints,
     selectedWaveform,
-    effects
+    effects,
+    drawingConfig,
+    setLoopMode
   } = useAudioStore()
+  
+  // Get loopEnabled from the store
+  const loopEnabled = drawingConfig.loopMode
   
   // Play the current drawing
   const playCurrentDrawing = () => {
     if (points.length < 2) return
     
-    audioEngine.playSound(points, selectedWaveform, effects)
+    setIsPlaying(true)
+    // Only show stop button if loop is enabled
+    setShowStopButton(loopEnabled)
+    
+    const bpm = drawingConfig.tempo
+    audioEngine.playSound(
+      points, 
+      selectedWaveform, 
+      effects, 
+      undefined, 
+      0, 
+      bpm, 
+      loopEnabled,
+      // Callback when playback completes
+      () => {
+        setIsPlaying(false)
+        setShowStopButton(false)
+      }
+    )
   }
+  
+  // Stop playback
+  const stopPlayback = () => {
+    setIsPlaying(false)
+    setShowStopButton(false)
+    audioEngine.stopAllSound()
+  }
+  
+  // Toggle play/stop
+  const handlePlayStop = () => {
+    if (showStopButton && isPlaying) {
+      stopPlayback()
+    } else {
+      playCurrentDrawing()
+    }
+  }
+  
+  // Handle loop toggle
+  const handleLoopToggle = (enabled: boolean) => {
+    setLoopMode(enabled)
+    
+    // If we're currently playing
+    if (isPlaying) {
+      if (enabled) {
+        // If enabling loop, update UI to show stop button
+        setShowStopButton(true)
+      } else {
+        // If disabling loop, tell the audio engine to finish current loop
+        audioEngine.setLoopMode(false)
+        // UI will update when the playback complete callback is called
+      }
+    }
+  }
+  
+  // Stop playback when component unmounts
+  useEffect(() => {
+    return () => {
+      audioEngine.stopAllSound()
+    }
+  }, [])
   
   // Save the current drawing
   const handleSaveSound = () => {
@@ -61,7 +128,8 @@ export default function Home() {
     if (points.length < 2) return
     
     try {
-      const midiBlob = exportToMIDI(points)
+      const bpm = drawingConfig.tempo
+      const midiBlob = exportToMIDI(points, bpm)
       saveBlob(midiBlob, `${soundName}.mid`)
     } catch (error) {
       console.error('Failed to export MIDI:', error)
@@ -123,10 +191,10 @@ export default function Home() {
         {/* Left panel */}
         <div className="lg:col-span-3 flex flex-col gap-6">
           <div className="bg-stone-900 rounded-md border border-stone-700 p-4">
-            <div className="flex justify-between items-center mb-4 header-editor-container">
+            <div className="flex justify-between items-center mb-4 header-editor-container mr-4">
               <div className="flex items-center gap-4">
                 <h2 className="text-lg font-semibold">Waveform Editor</h2>
-                <div className="px-3 py-2 bg-stone-800 border border-stone-700 rounded-md flex flex-wrap items-center gap-3">
+                <div className="px-3 py-2 bg-stone-800 border border-stone-700 rounded-md flex flex-wrap items-center gap-2">
                   {/* Waveform Settings */}
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-stone-400">Wave:</span>
@@ -186,22 +254,10 @@ export default function Home() {
                     </div>
                   </div>
                   
-                  {/* Sound Parameters */}
-                  <div className="h-4 w-px bg-stone-700" />
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-stone-400">Sound:</span>
-                    <div className="flex gap-2">
-                      <span className="px-1.5 py-0.5 bg-stone-900/50 border border-stone-600 rounded text-xs text-stone-300">
-                        100%
-                      </span>
-                      <span className="px-1.5 py-0.5 bg-stone-900/50 border border-stone-600 rounded text-xs text-stone-300">
-                        440Hz
-                      </span>
-                    </div>
-                  </div>
+                  
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 ml-4">
                 <Button 
                   size="sm" 
                   variant={editingState.isEditMode ? 'secondary' : 'outline'} 
@@ -244,19 +300,47 @@ export default function Home() {
             <WaveformCanvas width={800} height={400} />
             
             <div className="flex justify-center items-center mt-4">
-              <div className="flex gap-6 px-10">
+              <div className="flex gap-6 px-10 items-center">
                 <Button 
-                  onClick={playCurrentDrawing}
-                  className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white transition-colors
-                             focus:ring-2 focus:ring-emerald-500/50 focus:ring-offset-2 focus:ring-offset-stone-900"
+                  onClick={handlePlayStop}
+                  className={cn(
+                    "transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-offset-stone-900",
+                    showStopButton && isPlaying
+                      ? "bg-red-600 hover:bg-red-700 active:bg-red-800 text-white focus:ring-red-500/50"
+                      : "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white focus:ring-emerald-500/50"
+                  )}
                 >
-                  <Play className="h-4 w-4 mr-2" />
-                  Play
+                  {showStopButton && isPlaying ? (
+                    <>
+                      <Square className="h-4 w-4 mr-2" />
+                      Stop
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Play
+                    </>
+                  )}
                 </Button>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-stone-400">Loop</span>
+                  <Switch
+                    checked={loopEnabled}
+                    onCheckedChange={handleLoopToggle}
+                    className={cn(
+                      "data-[state=checked]:bg-emerald-600",
+                      "data-[state=unchecked]:bg-stone-700"
+                    )}
+                  />
+                </div>
                 
                 <Button 
                   variant="destructive" 
-                  onClick={clearPoints}
+                  onClick={() => {
+                    stopPlayback()
+                    clearPoints()
+                  }}
                   className="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white transition-colors
                              focus:ring-2 focus:ring-red-500/50 focus:ring-offset-2 focus:ring-offset-stone-900"
                 >
@@ -320,7 +404,28 @@ export default function Home() {
                         size="sm" 
                         variant="ghost" 
                         onClick={() => {
-                          audioEngine.playSound(sound.points, sound.waveform, sound.effects)
+                          // Stop any current playback
+                          if (isPlaying) {
+                            stopPlayback()
+                          }
+                          // Play this sound
+                          setIsPlaying(true)
+                          setShowStopButton(loopEnabled)
+                          
+                          audioEngine.playSound(
+                            sound.points, 
+                            sound.waveform, 
+                            sound.effects, 
+                            undefined, 
+                            0, 
+                            drawingConfig.tempo, 
+                            loopEnabled,
+                            // Callback when playback completes
+                            () => {
+                              setIsPlaying(false)
+                              setShowStopButton(false)
+                            }
+                          )
                         }}
                         className="text-stone-400 hover:text-emerald-400 hover:bg-emerald-950/30 active:bg-emerald-950/40 transition-all
                                    focus:ring-2 focus:ring-emerald-500/30 rounded-full"
@@ -331,12 +436,14 @@ export default function Home() {
                         size="sm" 
                         variant="ghost" 
                         onClick={() => {
+                          const bpm = drawingConfig.tempo
                           audioEngine.downloadSoundAsAudio(
                             sound.points, 
                             sound.waveform, 
                             sound.effects, 
                             undefined, 
-                            `${sound.name.replace(/\s+/g, '-').toLowerCase()}.wav`
+                            `${sound.name.replace(/\s+/g, '-').toLowerCase()}.wav`,
+                            bpm
                           )
                         }}
                         className="text-stone-400 hover:text-blue-400 hover:bg-blue-950/30 active:bg-blue-950/40 transition-all
@@ -352,50 +459,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
-      
-      <div className="flex items-center gap-3 my-4">
-        {/* <button
-          onClick={handleStop}
-          className="p-3 rounded-full bg-red-500 text-white hover:bg-red-600 active:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-offset-2 disabled:opacity-50"
-          disabled={!isPlaying}
-          aria-label="Stop"
-        >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button> */}
-        
-        {/* <button
-          onClick={handlePlayPause}
-          className="p-4 rounded-full bg-primary text-white hover:bg-primary/90 active:bg-primary/80 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 disabled:opacity-50"
-          aria-label={isPlaying ? 'Pause' : 'Play'}
-        >
-          {isPlaying ? (
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          ) : (
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          )}
-        </button>
-        
-        <button
-          onClick={handleRecord}
-          className={`p-3 rounded-full text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 ${
-            isRecording 
-              ? 'bg-red-600 hover:bg-red-700 active:bg-red-800 focus:ring-red-600/50'
-              : 'bg-neutral-700 hover:bg-neutral-800 active:bg-neutral-900 focus:ring-neutral-700/50'
-          }`}
-          aria-label={isRecording ? 'Stop Recording' : 'Start Recording'}
-        >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="6" fill={isRecording ? "currentColor" : "none"} strokeWidth={2} />
-          </svg>
-        </button> */}
       </div>
     </main>
   )

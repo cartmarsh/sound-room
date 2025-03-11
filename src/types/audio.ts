@@ -1,6 +1,6 @@
 // Sound and waveform types
 export type WaveformType = 'sine' | 'square' | 'sawtooth' | 'triangle' | 'custom'
-export type EffectType = 'reverb' | 'distortion'
+export type EffectType = 'reverb' | 'distortion' | 'filter' | 'delay' | 'chorus'
 
 export interface WaveformPoint {
   x: number

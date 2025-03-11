@@ -157,7 +157,7 @@ const WaveConfigPanel = () => {
                   className={cn(
                     "flex items-center gap-2 transition-all",
                     selectedWaveform === waveform.type 
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80" 
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 border-2 border-red-900" 
                       : "hover:bg-stone-800 hover:border-stone-600 active:bg-stone-700"
                   )}
                 >
@@ -329,22 +329,6 @@ const WaveConfigPanel = () => {
                   )}
                 >
                   Auto Connect
-                </Toggle>
-                
-                <Toggle
-                  pressed={drawingConfig.loopMode}
-                  onPressedChange={(pressed) => 
-                    setDrawingConfig({ loopMode: pressed })
-                  }
-                  size="sm"
-                  className={cn(
-                    "transition-all",
-                    drawingConfig.loopMode 
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80" 
-                      : "hover:bg-stone-800 hover:border-stone-600 active:bg-stone-700"
-                  )}
-                >
-                  Loop Mode
                 </Toggle>
               </div>
             </div>

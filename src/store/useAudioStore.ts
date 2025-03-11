@@ -12,6 +12,7 @@ import {
   WaveformType,
   // LineSegment
 } from '@/types/audio'
+import audioEngine from '@/services/AudioEngine'
 
 interface AudioStore {
   // Drawing state
@@ -54,6 +55,7 @@ interface AudioStore {
   saveSound: (name: string) => void
   setEffect: (effect: EffectType, value: number) => void
   setDrawingConfig: (config: Partial<DrawingConfig>) => void
+  setLoopMode: (enabled: boolean) => void
   addTimelineEvent: (soundId: number, track: number) => void
   updateTimelineEvent: (event: TimelineEvent) => void
   removeTimelineEvent: (id: string) => void
@@ -143,6 +145,20 @@ export const useAudioStore = create<AudioStore>((set) => ({
       ...config,
     }
   })),
+  
+  setLoopMode: (enabled) => set((state) => {
+    // Update the AudioEngine's loop mode if it's currently playing
+    if (state.isPlaying) {
+      audioEngine.setLoopMode(enabled);
+    }
+    
+    return {
+      drawingConfig: {
+        ...state.drawingConfig,
+        loopMode: enabled,
+      }
+    };
+  }),
   
   addTimelineEvent: (soundId, track) => set((state) => {
     const newEvent: TimelineEvent = {

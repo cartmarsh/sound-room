@@ -93,13 +93,19 @@ const Timeline = ({
   const timelineRef = useRef<HTMLDivElement>(null)
   const [draggedEvent, setDraggedEvent] = useState<TimelineEvent | null>(null)
   const [playheadRef, setPlayheadRef] = useState<number | null>(null)
+  const [showStopButton, setShowStopButton] = useState(false)
   const pixelsPerSecond = 100 // Scaling factor for timeline
+  
+  // Get the current loop state from the store
+  const { drawingConfig } = useAudioStore.getState()
+  const loopEnabled = drawingConfig.loopMode
   
   // Start/stop playback
   const togglePlayback = () => {
     if (isPlaying) {
       audioEngine.stopAllSound()
       setIsPlaying(false)
+      setShowStopButton(false)
       
       if (playheadRef !== null) {
         window.cancelAnimationFrame(playheadRef)
@@ -107,6 +113,7 @@ const Timeline = ({
       }
     } else {
       setIsPlaying(true)
+      setShowStopButton(loopEnabled)
       playTimeline()
     }
   }
@@ -117,8 +124,14 @@ const Timeline = ({
     
     if (sortedEvents.length === 0) {
       setIsPlaying(false)
+      setShowStopButton(false)
       return
     }
+    
+    // Get the current BPM and loop state from the store
+    const { drawingConfig } = useAudioStore.getState()
+    const bpm = drawingConfig.tempo
+    const loopEnabled = drawingConfig.loopMode
     
     // Find the sound with the latest end time to determine total duration
     const lastEndTime = sortedEvents.reduce((max, event) => {
@@ -144,7 +157,14 @@ const Timeline = ({
         const ref = window.requestAnimationFrame(updatePlayhead)
         setPlayheadRef(ref)
       } else {
-        setIsPlaying(false)
+        // If loop is enabled, reset playhead and start again
+        if (loopEnabled && isPlaying) {
+          setPlayheadPosition(0)
+          playTimeline()
+        } else {
+          setIsPlaying(false)
+          setShowStopButton(false)
+        }
       }
     }
     
@@ -164,7 +184,16 @@ const Timeline = ({
         sound.waveform,
         sound.effects,
         event.duration,
-        delay
+        delay,
+        bpm,
+        loopEnabled,
+        // Callback when all playback completes
+        () => {
+          if (!loopEnabled) {
+            setIsPlaying(false)
+            setShowStopButton(false)
+          }
+        }
       )
     }
   }
@@ -252,11 +281,11 @@ const Timeline = ({
         <div className="flex gap-2">
           <Button
             size="sm"
-            variant={isPlaying ? 'destructive' : 'outline'}
+            variant={showStopButton && isPlaying ? 'destructive' : 'outline'}
             onClick={togglePlayback}
           >
-            {isPlaying ? <Square className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-            {isPlaying ? 'Stop' : 'Play'}
+            {showStopButton && isPlaying ? <Square className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+            {showStopButton && isPlaying ? 'Stop' : 'Play'}
           </Button>
           <Button
             size="sm"
