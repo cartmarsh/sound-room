@@ -34,11 +34,7 @@ export default function Home() {
     setPoints,
     selectedWaveform,
     effects,
-    isPlaying,
-    isRecording,
-    handlePlayPause,
-    handleStop,
-    handleRecord,
+    isPlaying
   } = useAudioStore()
   
   // Play the current drawing
@@ -274,7 +270,7 @@ export default function Home() {
       </div>
       
       <div className="flex items-center gap-3 my-4">
-        <button
+        {/* <button
           onClick={handleStop}
           className="p-3 rounded-full bg-red-500 text-white hover:bg-red-600 active:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:ring-offset-2 disabled:opacity-50"
           disabled={!isPlaying}
@@ -283,9 +279,9 @@ export default function Home() {
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </button>
+        </button> */}
         
-        <button
+        {/* <button
           onClick={handlePlayPause}
           className="p-4 rounded-full bg-primary text-white hover:bg-primary/90 active:bg-primary/80 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 disabled:opacity-50"
           aria-label={isPlaying ? 'Pause' : 'Play'}
@@ -314,7 +310,7 @@ export default function Home() {
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <circle cx="12" cy="12" r="6" fill={isRecording ? "currentColor" : "none"} strokeWidth={2} />
           </svg>
-        </button>
+        </button> */}
       </div>
     </main>
   )
