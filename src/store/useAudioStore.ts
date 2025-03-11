@@ -33,6 +33,9 @@ interface AudioStore {
   effects: {
     reverb: number
     distortion: number
+    filter: number
+    delay: number
+    chorus: number
   }
   
   // Drawing configuration
@@ -76,6 +79,9 @@ export const useAudioStore = create<AudioStore>((set) => ({
   effects: {
     reverb: 0,
     distortion: 0,
+    filter: 0,
+    delay: 0,
+    chorus: 0
   },
   
   drawingConfig: {

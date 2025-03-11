@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
 export default function Home() {
-  const [soundName, setSoundName] = useState('Sound 1')
+  const [soundName, setSoundName] = useState('Sound x1')
   
   const {
     points,
@@ -121,8 +121,84 @@ export default function Home() {
         {/* Left panel */}
         <div className="lg:col-span-3 flex flex-col gap-6">
           <div className="bg-stone-900 rounded-md border border-stone-700 p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Waveform Editor</h2>
+            <div className="flex justify-between items-center mb-4 header-editor-container">
+              <div className="flex items-center gap-4">
+                <h2 className="text-lg font-semibold">Waveform Editor</h2>
+                <div className="px-3 py-2 bg-stone-800 border border-stone-700 rounded-md flex flex-wrap items-center gap-3">
+                  {/* Waveform Settings */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-stone-400">Wave:</span>
+                    <span className="text-sm font-medium text-stone-200 capitalize">{selectedWaveform}</span>
+                  </div>
+                  <div className="h-4 w-px bg-stone-700" />
+                  
+                  {/* Grid Settings */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-stone-400">Grid:</span>
+                    <div className="flex gap-2">
+                      <span className="px-1.5 py-0.5 bg-stone-900/50 border border-stone-600 rounded text-xs text-stone-300">
+                        {editingState.isEditMode ? 'Edit Mode' : 'Draw Mode'}
+                      </span>
+                      <span className="px-1.5 py-0.5 bg-stone-900/50 border border-stone-600 rounded text-xs text-stone-300">
+                        8px
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-4 w-px bg-stone-700" />
+                  
+                  {/* Effects */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-stone-400">Effects:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {effects.reverb > 0 && (
+                        <span className="px-1.5 py-0.5 bg-violet-900/30 border border-violet-700/30 rounded text-xs text-violet-300">
+                          Reverb: {effects.reverb}
+                        </span>
+                      )}
+                      {effects.distortion > 0 && (
+                        <span className="px-1.5 py-0.5 bg-violet-900/30 border border-violet-700/30 rounded text-xs text-violet-300">
+                          Distortion: {effects.distortion}
+                        </span>
+                      )}
+                      {effects.filter > 0 && (
+                        <span className="px-1.5 py-0.5 bg-violet-900/30 border border-violet-700/30 rounded text-xs text-violet-300">
+                          Filter: {effects.filter}
+                        </span>
+                      )}
+                      {effects.delay > 0 && (
+                        <span className="px-1.5 py-0.5 bg-violet-900/30 border border-violet-700/30 rounded text-xs text-violet-300">
+                          Delay: {effects.delay}
+                        </span>
+                      )}
+                      {effects.chorus > 0 && (
+                        <span className="px-1.5 py-0.5 bg-violet-900/30 border border-violet-700/30 rounded text-xs text-violet-300">
+                          Chorus: {effects.chorus}
+                        </span>
+                      )}
+                      {effects.reverb === 0 && effects.distortion === 0 && 
+                        (!effects.filter || effects.filter === 0) && 
+                        (!effects.delay || effects.delay === 0) && 
+                        (!effects.chorus || effects.chorus === 0) && (
+                        <span className="text-sm text-stone-500 italic">None</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Sound Parameters */}
+                  <div className="h-4 w-px bg-stone-700" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-stone-400">Sound:</span>
+                    <div className="flex gap-2">
+                      <span className="px-1.5 py-0.5 bg-stone-900/50 border border-stone-600 rounded text-xs text-stone-300">
+                        100%
+                      </span>
+                      <span className="px-1.5 py-0.5 bg-stone-900/50 border border-stone-600 rounded text-xs text-stone-300">
+                        440Hz
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <Button 
                   size="sm" 
@@ -159,16 +235,6 @@ export default function Home() {
                 >
                   <Scissors className="h-4 w-4 mr-2" />
                   Stretch
-                </Button>
-                
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => applyEffect('arpeggio')}
-                  className="border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white active:bg-stone-700 transition-colors
-                             focus:ring-2 focus:ring-stone-500/50 focus:ring-offset-2 focus:ring-offset-stone-900"
-                >
-                  Arpeggio
                 </Button>
               </div>
             </div>

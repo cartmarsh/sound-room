@@ -75,14 +75,13 @@ const WaveConfigPanel = () => {
         }
         break
       case 'square':
-        for (let x = 0; x < width; x += width / 4) {
-          ctx.lineTo(x, centerY - height * 0.4)
-          ctx.lineTo(x, centerY - height * 0.4)
-          ctx.lineTo(x + width / 4, centerY - height * 0.4)
-          ctx.lineTo(x + width / 4, centerY + height * 0.4)
-          if (x + width / 2 < width) {
-            ctx.lineTo(x + width / 2, centerY + height * 0.4)
-          }
+        let isHigh = true
+        for (let x = 0; x < width; x += width / 2) {
+          // Vertical line
+          ctx.lineTo(x, isHigh ? centerY - height * 0.4 : centerY + height * 0.4)
+          // Horizontal line
+          ctx.lineTo(x + width / 2, isHigh ? centerY - height * 0.4 : centerY + height * 0.4)
+          isHigh = !isHigh
         }
         break
       case 'triangle':
