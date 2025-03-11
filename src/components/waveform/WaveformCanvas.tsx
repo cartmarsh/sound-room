@@ -8,13 +8,11 @@ import { LineSegment, WaveformPoint } from '@/types/audio'
 interface WaveformCanvasProps {
   width: number
   height: number
-  gridSize?: number
 }
 
 const WaveformCanvas = ({ 
   width, 
-  height, 
-  gridSize = 20 
+  height
 }: WaveformCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isMouseDown, setIsMouseDown] = useState(false)
@@ -36,6 +34,9 @@ const WaveformCanvas = ({
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'
     ctx.lineWidth = 1
     
+    // Use drawingConfig.gridSize instead of local gridSize prop
+    const gridSize = drawingConfig.gridSize
+    
     // Draw vertical grid lines
     for (let x = 0; x <= width; x += gridSize) {
       ctx.moveTo(x, 0)
@@ -49,7 +50,7 @@ const WaveformCanvas = ({
     }
     
     ctx.stroke()
-  }, [width, height, gridSize])
+  }, [width, height, drawingConfig.gridSize])
   
   // Draw waveform points and lines
   const drawWaveform = useCallback((
@@ -125,7 +126,7 @@ const WaveformCanvas = ({
     // Draw existing waveform
     drawWaveform(ctx, points, editingState.hoveredSegment)
     
-  }, [points, width, height, drawingConfig.snapToGrid, editingState.hoveredSegment, drawGrid, drawWaveform])
+  }, [points, width, height, drawingConfig.snapToGrid, drawingConfig.gridSize, editingState.hoveredSegment, drawGrid, drawWaveform])
   
   // Draw a line connecting points
   const drawLine = (

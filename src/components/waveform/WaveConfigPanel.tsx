@@ -285,9 +285,9 @@ const WaveConfigPanel = () => {
                 min={5}
                 max={40}
                 step={5}
-                onValueChange={(value) => 
+                onValueChange={(value) => {
                   setDrawingConfig({ gridSize: value[0] })
-                }
+                }}
               />
               <div className="flex justify-between text-xs text-stone-500 mt-1">
                 <span>Small</span>

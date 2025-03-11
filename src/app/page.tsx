@@ -210,7 +210,7 @@ export default function Home() {
                         {editingState.isEditMode ? 'Edit Mode' : 'Draw Mode'}
                       </span>
                       <span className="px-1.5 py-0.5 bg-stone-900/50 border border-stone-600 rounded text-xs text-stone-300">
-                        8px
+                        {drawingConfig.gridSize}px
                       </span>
                     </div>
                   </div>
