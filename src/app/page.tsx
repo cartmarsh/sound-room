@@ -33,8 +33,7 @@ export default function Home() {
     updateEditingState,
     setPoints,
     selectedWaveform,
-    effects,
-    isPlaying
+    effects
   } = useAudioStore()
   
   // Play the current drawing
