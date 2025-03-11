@@ -295,6 +295,187 @@ export class AudioEngine {
   }
   
   /**
+   * Render and download a sound as a WAV file
+   */
+  async downloadSoundAsAudio(
+    points: WaveformPoint[],
+    waveformType: WaveformType = 'sine',
+    effects: { 
+      reverb: number; 
+      distortion: number;
+      filter?: number;
+      delay?: number;
+      chorus?: number;
+    } = { 
+      reverb: 0.3, 
+      distortion: 0.1,
+      filter: 2000,
+      delay: 0.1,
+      chorus: 0.1
+    },
+    duration?: number,
+    filename = 'sound.wav'
+  ): Promise<void> {
+    this.initialize()
+    if (!this.synth || !this.reverb || !this.distortion || !this.filter || !this.delay || !this.chorus || points.length < 2) {
+      console.error('Audio engine not properly initialized or no points provided')
+      return
+    }
+    
+    try {
+      // Calculate total duration based on the last point's time plus a buffer for release and effects tail
+      const processedPoints = this.calculateTimeValues(points, duration)
+      const lastPoint = processedPoints[processedPoints.length - 1]
+      const totalDuration = lastPoint.time + 2.0 // Add 2 seconds for release tail and reverb decay
+      
+      // Create a recorder to capture the audio output
+      const recorder = new Tone.Recorder()
+      
+      // Connect the master output to the recorder
+      Tone.getDestination().connect(recorder)
+      
+      // Start recording
+      await recorder.start()
+      
+      // Play the sound with all effects (using the exact same method as normal playback)
+      await this.playSound(points, waveformType, effects, duration, 0)
+      
+      // Wait for the sound to finish playing, including reverb and delay tails
+      // The longer wait ensures all effects like reverb tails are captured
+      await new Promise(resolve => setTimeout(resolve, (totalDuration + 1.0) * 1000))
+      
+      // Stop the recording and get the audio buffer (WebM format)
+      const webmBlob = await recorder.stop()
+      
+      // Convert WebM to WAV
+      const wavBlob = await this.convertToWav(webmBlob)
+      
+      // Create a download link
+      const url = URL.createObjectURL(wavBlob)
+      const anchor = document.createElement('a')
+      anchor.download = filename
+      anchor.href = url
+      anchor.click()
+      
+      // Clean up
+      URL.revokeObjectURL(url)
+      recorder.dispose()
+      
+      console.log(`Sound downloaded as ${filename}`)
+    } catch (error) {
+      console.error('Error in AudioEngine.downloadSoundAsAudio:', error)
+    }
+  }
+  
+  /**
+   * Convert WebM audio blob to WAV format
+   */
+  private async convertToWav(webmBlob: Blob): Promise<Blob> {
+    try {
+      // Create an audio context
+      const audioContext = new AudioContext()
+      
+      // Convert the blob to an array buffer
+      const arrayBuffer = await webmBlob.arrayBuffer()
+      
+      // Decode the audio data
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      
+      // Get the raw PCM data
+      const numberOfChannels = audioBuffer.numberOfChannels
+      const length = audioBuffer.length
+      const sampleRate = audioBuffer.sampleRate
+      const channelData = []
+      
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        channelData.push(audioBuffer.getChannelData(channel))
+      }
+      
+      // Create WAV file
+      const wavFile = this.createWavFile(channelData, length, numberOfChannels, sampleRate)
+      
+      // Create a new blob with WAV format
+      const wavBlob = new Blob([wavFile], { type: 'audio/wav' })
+      
+      // Close the audio context
+      audioContext.close()
+      
+      return wavBlob
+    } catch (error) {
+      console.error('Error converting to WAV:', error)
+      // Return the original blob if conversion fails
+      return webmBlob
+    }
+  }
+  
+  /**
+   * Create a WAV file from PCM data
+   */
+  private createWavFile(
+    channelData: Float32Array[],
+    length: number,
+    numberOfChannels: number,
+    sampleRate: number
+  ): ArrayBuffer {
+    // WAV header size
+    const headerSize = 44
+    
+    // 16-bit audio (2 bytes per sample)
+    const bytesPerSample = 2
+    
+    // Calculate total file size
+    const dataSize = length * numberOfChannels * bytesPerSample
+    const fileSize = headerSize + dataSize
+    
+    // Create a buffer for the WAV file
+    const buffer = new ArrayBuffer(fileSize)
+    const view = new DataView(buffer)
+    
+    // Write WAV header
+    // "RIFF" chunk descriptor
+    this.writeString(view, 0, 'RIFF')
+    view.setUint32(4, fileSize - 8, true)
+    this.writeString(view, 8, 'WAVE')
+    
+    // "fmt " sub-chunk
+    this.writeString(view, 12, 'fmt ')
+    view.setUint32(16, 16, true) // fmt chunk size
+    view.setUint16(20, 1, true) // PCM format
+    view.setUint16(22, numberOfChannels, true)
+    view.setUint32(24, sampleRate, true)
+    view.setUint32(28, sampleRate * numberOfChannels * bytesPerSample, true) // byte rate
+    view.setUint16(32, numberOfChannels * bytesPerSample, true) // block align
+    view.setUint16(34, bytesPerSample * 8, true) // bits per sample
+    
+    // "data" sub-chunk
+    this.writeString(view, 36, 'data')
+    view.setUint32(40, dataSize, true)
+    
+    // Write audio data
+    let offset = headerSize
+    for (let i = 0; i < length; i++) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        // Convert float to 16-bit PCM
+        const sample = Math.max(-1, Math.min(1, channelData[channel][i]))
+        const pcmValue = sample < 0 ? sample * 0x8000 : sample * 0x7FFF
+        view.setInt16(offset, pcmValue, true)
+        offset += bytesPerSample
+      }
+    }
+    
+    return buffer
+  }
+  
+  /**
+   * Write a string to a DataView at the specified offset
+   */
+  private writeString(view: DataView, offset: number, string: string): void {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i))
+    }
+  }
+  
+  /**
    * Disconnect and clean up
    */
   dispose(): void {

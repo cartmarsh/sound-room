@@ -8,12 +8,14 @@ import Timeline from '@/components/timeline/Timeline'
 import { useAudioStore } from '@/store/useAudioStore'
 import { 
   Play, 
-  Save, 
+  Square, 
   Trash2, 
-  Download, 
   Edit3, 
-  Scissors, 
-  ZoomIn 
+  Save, 
+  Music, 
+  Download,
+  Scissors,
+  ZoomIn
 } from 'lucide-react'
 import audioEngine from '@/services/AudioEngine'
 import { exportToMIDI, saveBlob } from '@/utils/midiExport'
@@ -324,6 +326,24 @@ export default function Home() {
                                    focus:ring-2 focus:ring-emerald-500/30 rounded-full"
                       >
                         <Play className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => {
+                          audioEngine.downloadSoundAsAudio(
+                            sound.points, 
+                            sound.waveform, 
+                            sound.effects, 
+                            undefined, 
+                            `${sound.name.replace(/\s+/g, '-').toLowerCase()}.wav`
+                          )
+                        }}
+                        className="text-stone-400 hover:text-blue-400 hover:bg-blue-950/30 active:bg-blue-950/40 transition-all
+                                   focus:ring-2 focus:ring-blue-500/30 rounded-full"
+                        title="Download as WAV"
+                      >
+                        <Download className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
