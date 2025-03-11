@@ -288,43 +288,17 @@ const WaveformCanvas = ({
   }
   
   return (
-    <div className="relative rounded-sm overflow-hidden border border-stone-700">
+    <div className="relative flex justify-center items-center w-full rounded-sm overflow-hidden border border-stone-700">
       <canvas
         ref={canvasRef}
         width={width}
         height={height}
-        className="bg-stone-900"
+        className="bg-stone-900 border border-stone-700"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       />
-      
-      {/* Canvas controls */}
-      <div className="absolute bottom-3 right-3 flex gap-2">
-        <button
-          onClick={() => {/* Zoom in functionality */}}
-          className="p-2 rounded-full bg-stone-800/80 backdrop-blur-sm border border-stone-700 text-stone-300 
-                     hover:bg-stone-700 hover:text-white active:scale-95 transition-all 
-                     focus:outline-none focus:ring-2 focus:ring-primary"
-          aria-label="Zoom in"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
-          </svg>
-        </button>
-        <button
-          onClick={() => {/* Zoom out functionality */}}
-          className="p-2 rounded-full bg-stone-800/80 backdrop-blur-sm border border-stone-700 text-stone-300 
-                     hover:bg-stone-700 hover:text-white active:scale-95 transition-all 
-                     focus:outline-none focus:ring-2 focus:ring-primary"
-          aria-label="Zoom out"
-        >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
-          </svg>
-        </button>
-      </div>
     </div>
   )
 }

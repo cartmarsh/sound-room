@@ -180,8 +180,8 @@ export default function Home() {
             
             <WaveformCanvas width={800} height={400} />
             
-            <div className="flex justify-between items-center mt-4">
-              <div className="flex gap-2">
+            <div className="flex justify-center items-center mt-4">
+              <div className="flex gap-6 px-10">
                 <Button 
                   onClick={playCurrentDrawing}
                   className="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white transition-colors
