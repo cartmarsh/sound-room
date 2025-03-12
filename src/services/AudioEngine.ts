@@ -15,6 +15,7 @@ export class AudioEngine {
   private isLooping: boolean = false
   private finishCurrentLoop: boolean = false
   private onPlaybackComplete: (() => void) | null = null
+  private pointsUpdateCallback: (() => WaveformPoint[]) | null = null
   
   
   constructor() {
@@ -188,7 +189,8 @@ export class AudioEngine {
     delayStart = 0,
     bpm: number = 120,
     loop: boolean = false,
-    onComplete?: () => void
+    onComplete?: () => void,
+    pointsUpdateCallback?: () => WaveformPoint[]
   ): Promise<void> {
     this.initialize()
     if (!this.monosynth || !this.reverb || !this.distortion || !this.filter || !this.delay || !this.chorus || points.length < 2) return
@@ -200,6 +202,7 @@ export class AudioEngine {
     this.isLooping = loop
     this.finishCurrentLoop = false
     this.onPlaybackComplete = onComplete || null
+    this.pointsUpdateCallback = pointsUpdateCallback || null
     
     try {
       // Apply effects with logging
@@ -319,7 +322,25 @@ export class AudioEngine {
           } 
           // Only continue looping if isLooping is still true
           else if (this.isLooping) {
-            this.playSound(points, waveformType, effects, duration, 0, bpm, loop, onComplete)
+            // Get updated points if a callback is provided
+            const updatedPoints = this.pointsUpdateCallback ? this.pointsUpdateCallback() : points;
+            
+            // Only play if we have enough points
+            if (updatedPoints.length >= 2) {
+              this.playSound(
+                updatedPoints, 
+                waveformType, 
+                effects, 
+                duration, 
+                0, 
+                bpm, 
+                loop, 
+                onComplete,
+                pointsUpdateCallback
+              );
+            } else if (this.onPlaybackComplete) {
+              this.onPlaybackComplete();
+            }
           }
         }, totalDuration * 1000)
       } else if (!loop && this.onPlaybackComplete) {
@@ -361,6 +382,7 @@ export class AudioEngine {
     this.isLooping = false;
     this.finishCurrentLoop = false;
     this.onPlaybackComplete = null;
+    this.pointsUpdateCallback = null;
     this.stopLoop();
   }
   

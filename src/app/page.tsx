@@ -68,7 +68,9 @@ export default function Home() {
       () => {
         setIsPlaying(false)
         setShowStopButton(false)
-      }
+      },
+      // Callback to get the latest points when looping
+      loopEnabled ? () => useAudioStore.getState().points : undefined
     )
   }
   
@@ -409,7 +411,9 @@ export default function Home() {
                             () => {
                               setIsPlaying(false)
                               setShowStopButton(false)
-                            }
+                            },
+                            // Callback to get the latest points when looping
+                            loopEnabled ? () => useAudioStore.getState().points : undefined
                           )
                         }}
                         className="text-stone-400 hover:text-emerald-400 hover:bg-emerald-950/30 active:bg-emerald-950/40 transition-all

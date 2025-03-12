@@ -179,6 +179,7 @@ const Timeline = ({
       
       const delay = Math.max(0, event.startTime - playheadPosition)
       
+      // Play the sound with the calculated delay
       audioEngine.playSound(
         sound.points,
         sound.waveform,
@@ -186,14 +187,9 @@ const Timeline = ({
         event.duration,
         delay,
         bpm,
-        loopEnabled,
-        // Callback when all playback completes
-        () => {
-          if (!loopEnabled) {
-            setIsPlaying(false)
-            setShowStopButton(false)
-          }
-        }
+        false, // Don't loop individual sounds in the timeline
+        undefined,
+        // No need for points update callback here since we're not looping individual sounds
       )
     }
   }
