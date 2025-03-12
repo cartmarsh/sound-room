@@ -307,7 +307,7 @@ const WaveConfigPanel = () => {
                   className={cn(
                     "flex items-center gap-2 transition-all",
                     drawingConfig.snapToGrid 
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80" 
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 border-2 border-red-900" 
                       : "hover:bg-stone-800 hover:border-stone-600 active:bg-stone-700"
                   )}
                 >
@@ -322,13 +322,13 @@ const WaveConfigPanel = () => {
                   }
                   size="sm"
                   className={cn(
-                    "transition-all",
+                    "flex items-center gap-2 transition-all",
                     drawingConfig.autoConnect 
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80" 
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 border-2 border-red-900" 
                       : "hover:bg-stone-800 hover:border-stone-600 active:bg-stone-700"
                   )}
                 >
-                  Auto Connect
+                  <span>Auto Connect</span>
                 </Toggle>
               </div>
             </div>

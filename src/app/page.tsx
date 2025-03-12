@@ -257,22 +257,7 @@ export default function Home() {
                   
                 </div>
               </div>
-              <div className="flex gap-2 ml-4">
-                <Button 
-                  size="sm" 
-                  variant={editingState.isEditMode ? 'secondary' : 'outline'} 
-                  onClick={toggleEditMode}
-                  className={cn(
-                    "transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-offset-stone-900",
-                    editingState.isEditMode 
-                      ? "bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white focus:ring-violet-500/50" 
-                      : "border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white active:bg-stone-700 focus:ring-stone-500/50"
-                  )}
-                >
-                  <Edit3 className="h-4 w-4 mr-2" />
-                  {editingState.isEditMode ? 'Exit Edit' : 'Edit Mode'}
-                </Button>
-                
+              <div className="flex gap-2 ml-4">  
                 <Button 
                   size="sm" 
                   variant="outline" 
@@ -366,7 +351,7 @@ export default function Home() {
                   Save
                 </Button>
                 
-                <Button 
+                {/* <Button 
                   variant="outline" 
                   onClick={handleExportMIDI}
                   className="border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white active:bg-stone-700 transition-colors
@@ -374,12 +359,12 @@ export default function Home() {
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Export MIDI
-                </Button>
+                </Button> */}
               </div>
             </div>
           </div>
           
-          <Timeline width={800} height={300} />
+          {/*<Timeline width={800} height={300} />*/}
         </div>
         
         {/* Right panel */}
