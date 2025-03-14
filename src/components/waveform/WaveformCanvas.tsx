@@ -4,15 +4,18 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import { useAudioStore } from '@/store/useAudioStore'
 import { findLineSegment } from '@/utils/waveform'
 import { LineSegment, WaveformPoint } from '@/types/audio'
+import { cn } from '@/lib/utils'
 
 interface WaveformCanvasProps {
   width: number
   height: number
+  className?: string
 }
 
 const WaveformCanvas = ({ 
   width, 
-  height
+  height,
+  className
 }: WaveformCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isMouseDown, setIsMouseDown] = useState(false)
@@ -289,7 +292,7 @@ const WaveformCanvas = ({
   }
   
   return (
-    <div className="relative flex justify-center items-center w-full rounded-sm overflow-hidden border border-stone-700">
+    <div className={cn("relative flex justify-center items-center w-full rounded-sm overflow-hidden border border-stone-700", className)}>
       <canvas
         ref={canvasRef}
         width={width}

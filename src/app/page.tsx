@@ -16,7 +16,8 @@ import {
   Download,
   Scissors,
   ZoomIn,
-  Repeat
+  Repeat,
+  HelpCircle
 } from 'lucide-react'
 import audioEngine from '@/services/AudioEngine'
 import { exportToMIDI, saveBlob } from '@/utils/midiExport'
@@ -24,6 +25,8 @@ import { smoothLine, stretchLine, applyArpeggio } from '@/utils/waveform'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
+import { Tutorial } from '@/components/ui/tutorial'
+import { useTutorial } from '@/hooks/useTutorial'
 
 export default function Home() {
   const [soundName, setSoundName] = useState('Sound x1')
@@ -46,6 +49,9 @@ export default function Home() {
   
   // Get loopEnabled from the store
   const loopEnabled = drawingConfig.loopMode
+  
+  // Tutorial hook
+  const { isTutorialOpen, openTutorial, closeTutorial, tutorialSteps } = useTutorial()
   
   // Play the current drawing
   const playCurrentDrawing = () => {
@@ -184,9 +190,21 @@ export default function Home() {
   
   return (
     <main className="flex min-h-screen flex-col bg-stone-950 text-white p-4 md:p-8">
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">SoundRoom</h1>
-        <p className="text-stone-400">A digital audio workstation for creating and arranging sounds</p>
+      <header className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">SoundRoom</h1>
+          <p className="text-stone-400">A digital audio workstation for creating and arranging sounds</p>
+        </div>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={openTutorial}
+          className="border-stone-600 text-stone-300 hover:bg-stone-800 hover:text-white"
+        >
+          <HelpCircle className="h-4 w-4 mr-2" />
+          Tutorial
+        </Button>
       </header>
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -196,7 +214,7 @@ export default function Home() {
             <div className="flex justify-between items-center mb-4 header-editor-container mr-4">
               <div className="flex items-center gap-4">
                 <h2 className="text-lg font-semibold">Waveform Editor</h2>
-                <div className="px-3 py-2 bg-stone-800 border border-stone-700 rounded-md flex flex-wrap items-center gap-2">
+                <div className="px-3 py-2 bg-stone-800 border border-stone-700 rounded-md flex flex-wrap items-center gap-2  grid-settings">
                   {/* Waveform Settings */}
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-stone-400">Wave:</span>
@@ -284,9 +302,9 @@ export default function Home() {
               </div>
             </div>
             
-            <WaveformCanvas width={800} height={400} />
+            <WaveformCanvas width={800} height={400} className="waveform-canvas" />
             
-            <div className="flex justify-center items-center mt-4">
+            <div className="flex justify-center items-center mt-4 playback-controls">
               <div className="flex gap-6 px-10 items-center">
                 <Button 
                   onClick={handlePlayStop}
@@ -371,7 +389,9 @@ export default function Home() {
         
         {/* Right panel */}
         <div className="flex flex-col gap-4">
-          <WaveConfigPanel />
+          <div className="effects-panel">
+            <WaveConfigPanel />
+          </div>
           
           <div className="bg-stone-900 border border-stone-700 rounded-md p-4">
             <h3 className="text-lg font-semibold mb-4">Saved Sounds</h3>
@@ -449,6 +469,13 @@ export default function Home() {
           </div>
         </div>
       </div>
+      
+      {/* Tutorial Component */}
+      <Tutorial 
+        steps={tutorialSteps} 
+        isOpen={isTutorialOpen} 
+        onClose={closeTutorial} 
+      />
     </main>
   )
 }

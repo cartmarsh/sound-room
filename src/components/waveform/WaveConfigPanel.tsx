@@ -7,7 +7,7 @@ import { Toggle } from '@/components/ui/toggle'
 import { useAudioStore } from '@/store/useAudioStore'
 import { WaveformType } from '@/types/audio'
 import { Square, Triangle, Waves, ZapOff, Sliders, Grid } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 const WaveConfigPanel = () => {
@@ -19,6 +19,9 @@ const WaveConfigPanel = () => {
     drawingConfig,
     setDrawingConfig,
   } = useAudioStore()
+  
+  // Add state to track the active tab
+  const [activeTab, setActiveTab] = useState('waveform')
   
   const waveforms: { type: WaveformType; label: string; icon: React.ReactNode }[] = [
     {
@@ -116,9 +119,43 @@ const WaveConfigPanel = () => {
     }
   }, [selectedWaveform])
   
+  // Listen for tutorial events
+  useEffect(() => {
+    // Function to check if the tutorial is on the effects step
+    const checkForTutorialEffectsStep = () => {
+      const tutorialTooltip = document.querySelector('.fixed.inset-0.z-50.flex')
+      if (!tutorialTooltip) return false
+      
+      const tooltipTitle = tutorialTooltip.querySelector('h3')
+      if (!tooltipTitle) return false
+      
+      return tooltipTitle.textContent === 'Sound Effects'
+    }
+    
+    // Function to handle the tutorial effects step
+    const handleTutorialEffectsStep = () => {
+      if (checkForTutorialEffectsStep() && activeTab !== 'effects') {
+        setActiveTab('effects')
+      }
+    }
+    
+    // Check initially
+    handleTutorialEffectsStep()
+    
+    // Set up an interval to periodically check
+    const intervalId = setInterval(handleTutorialEffectsStep, 500)
+    
+    return () => clearInterval(intervalId)
+  }, [activeTab])
+  
   return (
     <div className="rounded-md bg-stone-900 border border-stone-700 p-4 flex flex-col gap-4">
-      <Tabs defaultValue="waveform" className="w-full">
+      <Tabs 
+        defaultValue="waveform" 
+        className="w-full"
+        value={activeTab}
+        onValueChange={setActiveTab}
+      >
         <TabsList className="w-full flex mb-4 rounded-md p-1 space-x-1 bg-transparent">
           {['waveform', 'effects', 'grid'].map((tab) => (
             <TabsTrigger 
@@ -131,7 +168,8 @@ const WaveConfigPanel = () => {
                 "data-[state=active]:shadow-md data-[state=inactive]:hover:bg-stone-800/30",
                 "data-[state=active]:hover:bg-primary/90 data-[state=active]:font-medium",
                 "border-b-2 border-transparent data-[state=active]:border-white text-sm",
-                tab === 'waveform' ? "flex-grow-[1.2]" : ""
+                tab === 'waveform' ? "flex-grow-[1.2]" : "",
+                tab === 'effects' && "effects-tab"
               )}
             >
               <span className="flex items-center justify-center gap-1">
@@ -144,7 +182,7 @@ const WaveConfigPanel = () => {
           ))}
         </TabsList>
         
-        <TabsContent value="waveform" className="space-y-4">
+        <TabsContent value="waveform" className="space-y-4 waveform-config-panel">
           <div>
             <div className="text-sm text-stone-200 mb-2">Waveform Type</div>
             <div className="flex flex-wrap gap-2">
@@ -182,7 +220,7 @@ const WaveConfigPanel = () => {
           </div>
         </TabsContent>
         
-        <TabsContent value="effects" className="space-y-4">
+        <TabsContent value="effects" className="space-y-4 effects-config-panel">
           <div className="space-y-4">
             <div>
               <div className="text-sm text-stone-200 mb-2">Reverb</div>
@@ -265,7 +303,7 @@ const WaveConfigPanel = () => {
             </div>
             
             {/* Current Settings Summary */}
-            <div className="mt-6 p-3 bg-stone-800 rounded-md border border-stone-700 text-xs text-stone-300">
+            <div className="mt-6 p-3 bg-stone-800 rounded-md border border-stone-700 text-xs text-stone-300 effects-panel">
               <p><span className="font-semibold">Current Waveform:</span> {selectedWaveform}</p>
               <p><span className="font-semibold">Reverb:</span> {Math.round(effects.reverb * 100)}%</p>
               <p><span className="font-semibold">Distortion:</span> {Math.round(effects.distortion * 100)}%</p>
@@ -276,7 +314,7 @@ const WaveConfigPanel = () => {
           </div>
         </TabsContent>
         
-        <TabsContent value="grid" className="space-y-4">
+        <TabsContent value="grid" className="space-y-4 grid-config-panel">
           <div className="space-y-4">
             <div>
               <div className="text-sm text-stone-200 mb-2">Grid Size</div>
